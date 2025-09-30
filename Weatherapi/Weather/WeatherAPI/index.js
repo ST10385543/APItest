@@ -2,14 +2,20 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+require("dotenv").config(); // load .env variables
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000; // use Render assigned port if available
 
 app.use(cors());
 app.use(express.json());
 
-const API_KEY = "zpka_8602db016259447d80f8908bbeac002e_570f2d8d"; // put your AccuWeather API key
+const API_KEY = process.env.ACCUWEATHER_KEY; // store your AccuWeather key in .env
+
+if (!API_KEY) {
+  console.error("No AccuWeather API key set in .env as ACCUWEATHER_KEY");
+  process.exit(1);
+}
 
 // Generic endpoint for any city in South Africa
 app.get("/weather", async (req, res) => {
@@ -25,9 +31,6 @@ app.get("/weather", async (req, res) => {
         params: {
           apikey: API_KEY,
           q: city,
-          // Optional: limit results to South Africa
-          // In AccuWeather free tier, you can filter by country
-          // We can filter manually below
         },
       }
     );
@@ -57,7 +60,7 @@ app.get("/weather", async (req, res) => {
       }
     );
 
-    const weather = weatherResp.data[0]; // first item has current weather
+    const weather = weatherResp.data[0];
 
     res.json({
       name: saLocation.LocalizedName,
@@ -65,7 +68,7 @@ app.get("/weather", async (req, res) => {
       temperature: weather.Temperature.Metric.Value,
       condition: weather.WeatherText,
       icon: weather.WeatherIcon,
-      uv: weather.UVIndex, // may need to check API for UV property
+      uv: weather.UVIndex,
     });
   } catch (err) {
     console.error(err.message);
@@ -73,6 +76,8 @@ app.get("/weather", async (req, res) => {
   }
 });
 
-app.listen(PORT, () =>
-  console.log(`AccuWeather API proxy running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(
+    `AccuWeather API proxy running on port ${PORT}, available at ${process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`}`
+  );
+});
